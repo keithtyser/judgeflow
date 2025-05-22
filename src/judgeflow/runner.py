@@ -89,13 +89,46 @@ class Runner:
         # Store critique (full reflection response)
         critique = reflection_response
         
+        # --- Confidence metrics ---
+        # 1. Self-reported confidence
+        confidence_context = dict(row)
+        confidence_context['score'] = score_value
+        confidence_prompt = metric.confidence_prompt.format(**confidence_context)
+        self_conf = None
+        try:
+            conf_response = await chat(confidence_prompt)
+            conf_match = re.search(r"([0-9]{1,3}(?:\.[0-9]+)?)", conf_response)
+            if conf_match:
+                self_conf = float(conf_match.group(1))
+                if self_conf > 100:
+                    self_conf = 100.0
+                elif self_conf < 0:
+                    self_conf = 0.0
+        except Exception as e:
+            print(f"Warning: Failed to get self_conf for metric {metric.name}: {e}")
+            self_conf = None
+
+        # 2. Agreement % from 3 resamples (simulate seeds 21, 42, 84)
+        resample_scores = []
+        for _ in [21, 42, 84]:
+            try:
+                resample_response = await chat(prompt)
+                resample_score = metric.parse_score(resample_response)
+                resample_scores.append(resample_score)
+            except Exception as e:
+                print(f"Warning: Resample failed for metric {metric.name}: {e}")
+        agree_count = sum(1 for s in resample_scores if abs(s - score_value) <= 1.0)
+        agree_conf = (agree_count / 3) * 100 if resample_scores else None
+
         return Score(
             row_id=str(row.get("id", "unknown")),
             metric=metric.name,
             score=score_value,
             revised_score=revised_score,
             revision_delta=revision_delta,
-            critique=critique
+            critique=critique,
+            self_conf=self_conf,
+            agree_conf=agree_conf
         )
 
     def _write_scores_to_csv(self, scores: List[Score]):
@@ -105,7 +138,7 @@ class Runner:
             writer = csv.writer(f)
             if write_header:
                 writer.writerow([
-                    "row_id", "metric", "score", "revised_score", "revision_delta", "critique", "timestamp"
+                    "row_id", "metric", "score", "revised_score", "revision_delta", "critique", "self_conf", "agree_conf", "timestamp"
                 ])
             for score in scores:
                 writer.writerow([
@@ -115,5 +148,7 @@ class Runner:
                     score.revised_score if score.revised_score is not None else "",
                     score.revision_delta if score.revision_delta is not None else "",
                     score.critique if score.critique is not None else "",
+                    score.self_conf if score.self_conf is not None else "",
+                    score.agree_conf if score.agree_conf is not None else "",
                     score.timestamp.isoformat() if score.timestamp else ""
                 ]) 

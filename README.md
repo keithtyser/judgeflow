@@ -21,6 +21,7 @@ python -m src.judgeflow.cli --dataset path/to/dataset.parquet --quick
 - Quick evaluation mode for rapid testing
 - Structured results with timestamps
 - **Self-reflection:** After the initial score, the LLM critiques its own answer and provides a revised score. The difference (`revision_delta`) and the critique are stored in the CSV file.
+- **Confidence metrics:** For each score, the LLM self-reports its confidence (0-100), and agreement is measured by resampling the evaluation 3 times and reporting the % of resamples within ±1 point of the original score. These are stored as `self_conf` and `agree_conf` in the CSV.
 - **Context-rich prompts:** Self-reflection prompts now include all relevant context (question, answer, etc.) and instruct the LLM to output a revised score as 'Revised score: X'.
 - **Robust parsing:** The system first looks for 'Revised score: X' in the LLM output, then falls back to the first number 0-10.
 
@@ -31,6 +32,8 @@ python -m src.judgeflow.cli --dataset path/to/dataset.parquet --quick
 - `revised_score`: The LLM's revised score after self-reflection (optional)
 - `revision_delta`: The difference between revised and initial score (optional)
 - `critique`: The LLM's self-critique or explanation (optional)
+- `self_conf`: The LLM's self-reported confidence in its initial score (0-100)
+- `agree_conf`: The agreement percentage, i.e., the % of 3 resampled scores within ±1 point of the original score
 - `timestamp`: When the evaluation was performed
 
 ### LLM Adapter (`llm.py`)
@@ -146,6 +149,8 @@ The results will show:
 - Revised Score: The LLM's revised score after self-reflection (if available)
 - Revision Delta: The difference between revised and initial score (if available)
 - Critique: The LLM's self-critique or explanation (if available)
+- Self Conf: The LLM's self-reported confidence (0-100)
+- Agree Conf: The agreement % from 3 resamples (within ±1 point)
 - Timestamp: When the evaluation was performed
 
 ### Available Metrics

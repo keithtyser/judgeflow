@@ -12,6 +12,8 @@ class Score(SQLModel, table=True):
     revision_delta: Optional[float] = None
     critique: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    self_conf: Optional[float] = None
+    agree_conf: Optional[float] = None
 
     class Config:
         arbitrary_types_allowed = True 
