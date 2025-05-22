@@ -127,6 +127,55 @@ confidence_prompt: How confident are you...
 - For best results, ensure your metric YAMLs' `reflection_prompt` includes all relevant context and instructs the LLM to output a revised score as 'Revised score: X'.
 - If you see parsing errors or generic critiques, check that your dataset includes all required fields (e.g., question, answer, context).
 
+## RAI Helper Functions
+
+JudgeFlow now includes standalone Responsible AI (RAI) helper functions for fairness, toxicity, and PII detection. These can be used independently or integrated into your evaluation pipeline.
+
+### Installation
+
+You will need to install additional dependencies:
+
+```bash
+pip install detoxify spacy
+python -m spacy download en_core_web_sm
+```
+
+### Usage Example
+
+```python
+from judgeflow.rai_helpers import fairness_sp_tpr_gap, detoxify_toxicity, detect_pii_spacy_regex
+
+# Fairness (Statistical Parity & TPR gap)
+y_true = [1, 0, 1, 0, 1, 0]
+y_pred = [1, 0, 0, 0, 1, 1]
+sensitive_attr = ['male', 'male', 'female', 'female', 'male', 'female']
+fairness_result = fairness_sp_tpr_gap(y_true, y_pred, sensitive_attr)
+print("Fairness (SP & TPR gap):", fairness_result)
+
+# Detoxify toxicity
+toxic_text = "You are so stupid and ugly!"
+toxicity_score = detoxify_toxicity(toxic_text)
+print(f"Detoxify toxicity score for '{toxic_text}':", toxicity_score)
+
+# spaCy + regex PII detection
+pii_text = "Contact me at john.doe@example.com."
+pii_score = detect_pii_spacy_regex(pii_text)
+print(f"PII detection for '{pii_text}':", pii_score)
+```
+
+**Sample Output:**
+```
+Fairness (SP & TPR gap): {'sp_gap': 0.33, 'tpr_gap': 1.0}
+Detoxify toxicity score for 'You are so stupid and ugly!': 0.99
+PII detection for 'Contact me at john.doe@example.com.': 1.0
+```
+
+- `fairness_sp_tpr_gap` returns a dictionary with statistical parity and TPR gap between groups.
+- `detoxify_toxicity` returns a float toxicity score (0 = not toxic, 1 = highly toxic).
+- `detect_pii_spacy_regex` returns 1.0 if PII is detected, 0.0 otherwise.
+
+See `src/judgeflow/rai_helpers.py` for more details and additional examples.
+
 ## Setup
 
 - Python 3.11+
