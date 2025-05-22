@@ -6,7 +6,7 @@ JudgeFlow is a framework for evaluating and analyzing AI model outputs with a fo
 
 1. **Install dependencies:**
    ```bash
-   pip install pandas pyarrow datasets tiktoken
+   pip install -r requirements.txt
    ```
 
 2. **Download mini datasets:**
