@@ -12,6 +12,16 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Global LLM instance
+_llm_instance = None
+
+def get_llm() -> 'LLMAdapter':
+    """Get or create the global LLM instance."""
+    global _llm_instance
+    if _llm_instance is None:
+        _llm_instance = LLMAdapter()
+    return _llm_instance
+
 class LLMAdapter:
     def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4-turbo-preview"):
         """Initialize the LLM adapter.
@@ -64,11 +74,15 @@ class LLMAdapter:
             logger.error(f"OpenAI API error: {str(e)}")
             raise
 
+async def chat(prompt: str) -> str:
+    """Simple chat function that takes a prompt and returns a response."""
+    llm = get_llm()
+    messages = [{"role": "user", "content": prompt}]
+    return await llm.chat(messages, temperature=0.7)
+
 async def test_chat():
     """Simple test function."""
-    llm = LLMAdapter()
-    messages = [{"role": "user", "content": "Say hello!"}]
-    response = await llm.chat(messages)
+    response = await chat("Say hello!")
     print(f"Response: {response}")
 
 def main():

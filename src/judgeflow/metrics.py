@@ -1,5 +1,6 @@
 import os
-from typing import List
+import re
+from typing import List, Callable, Any
 import yaml  # Note: Requires PyYAML to be installed (e.g., poetry add PyYAML)
 from pydantic import BaseModel
 
@@ -12,10 +13,29 @@ class MetricSpec(BaseModel):
     reflection_prompt: str
     confidence_prompt: str
 
-def load_registry(registry_path: str) -> List[MetricSpec]:
+    def parse_score(self, text: str) -> float:
+        """Parse the score from text using the specified parser."""
+        if self.parser.startswith("regex:"):
+            pattern = self.parser[6:]  # Remove "regex:" prefix
+            match = re.search(pattern, text)
+            if match:
+                try:
+                    return float(match.group(1))
+                except (ValueError, IndexError):
+                    raise ValueError(f"Could not parse float from match: {match.group(0)}")
+            raise ValueError(f"No match found for pattern: {pattern}")
+        raise ValueError(f"Unsupported parser type: {self.parser}")
+
+def load_registry(registry_path: str = None) -> List[MetricSpec]:
     """
     Loads metric specifications from all YAML files in the given directory.
+    If no path is provided, looks in the default metrics directory.
     """
+    if registry_path is None:
+        # Get the directory where this file is located
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        registry_path = os.path.join(current_dir, "metrics")
+
     metric_specs = []
     if not os.path.isdir(registry_path):
         print(f"Warning: Metrics directory '{registry_path}' not found.")
@@ -31,23 +51,14 @@ def load_registry(registry_path: str) -> List[MetricSpec]:
                         metric_specs.append(MetricSpec(**data))
             except yaml.YAMLError as e:
                 print(f"Error parsing YAML file {filepath}: {e}")
-            except Exception as e: # Catches Pydantic validation errors and other issues
+            except Exception as e:  # Catches Pydantic validation errors and other issues
                 print(f"Error loading metric from {filepath}: {e}")
+    
     return metric_specs
 
 if __name__ == "__main__":
     # This test assumes the 'metrics' directory is located at the project root,
     # and this script is run in a context where "metrics" resolves correctly
     # (e.g., run from the project root: python judgeflow/metrics.py or python -m judgeflow.metrics).
-    metrics_directory = "metrics"
-    
-    # For a more robust path if this script is inside a package, e.g., judgeflow/judgeflow/metrics.py
-    # and 'metrics' is at the project root (e.g., judgeflow/metrics/):
-    # script_dir = os.path.dirname(os.path.abspath(__file__))
-    # project_root = os.path.dirname(script_dir) # Adjust if nested deeper
-    # metrics_directory = os.path.join(project_root, "metrics")
-    # However, to keep it simple and aligned with the plan's test:
-    
-    loaded_metrics = load_registry(metrics_directory)
-    # The plan states: "`print(len(load_registry()))` shows 6."
-    print(len(loaded_metrics)) 
+    loaded_metrics = load_registry()
+    print(f"Loaded {len(loaded_metrics)} metrics:") 

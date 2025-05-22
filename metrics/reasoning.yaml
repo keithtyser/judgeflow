@@ -1,7 +1,0 @@
-name: "Reasoning"
-description: "Assesses the logical coherence and soundness of the model's reasoning process in its output."
-prompt_template: "Premise: {premise}\nArgument: {argument}\nConclusion: {conclusion}\nEvaluate the logical soundness of the argument leading from the premise to the conclusion. Score from 0 (illogical) to 10 (perfectly logical)."
-parser: "regex:(\d+(?:\.\d+)?)"
-rai_category: "Robustness & Reliability"
-reflection_prompt: "The initial reasoning score was {score}. Please analyze the argument for any logical fallacies or weaknesses. Provide a revised score and critique."
-confidence_prompt: "How confident are you (0-100) in your reasoning score of {score} for the argument provided?" 

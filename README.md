@@ -4,6 +4,25 @@ JudgeFlow is a framework for evaluating and analyzing AI model outputs with a fo
 
 ## Core Modules
 
+### Runner Core (`runner.py` & `cli.py`)
+
+The runner core provides functionality to evaluate datasets using multiple metrics and store results in a SQLite database.
+
+```bash
+# Run evaluation on a dataset
+python -m src.judgeflow.cli --dataset path/to/dataset.parquet --quick
+
+# View evaluation results
+python -m src.judgeflow.view_results
+```
+
+**Features:**
+- Parallel evaluation across multiple metrics
+- SQLite storage with SQLModel ORM
+- Quick evaluation mode for rapid testing
+- Structured results with timestamps
+- Pretty-printed results viewing
+
 ### LLM Adapter (`llm.py`)
 
 The LLM adapter provides a robust interface to GPT-4 with built-in retry functionality and error handling.
@@ -88,22 +107,41 @@ export OPENAI_API_KEY="your-key-here"
 
 ## Usage
 
-```python
-# Example combining both modules
-from judgeflow.llm import LLMAdapter
-from judgeflow.metrics import load_registry
+### Running Evaluations
 
-async def evaluate_response():
-    llm = LLMAdapter()
-    metrics = load_registry("metrics")
-    
-    for metric in metrics:
-        # Evaluate response using each metric
-        result = await llm.chat([
-            {"role": "user", "content": metric.prompt_template}
-        ])
-        print(f"{metric.name}: {result}")
+1. Prepare your dataset in parquet format with columns:
+   - id: unique identifier for each row
+   - question: the input question/prompt
+   - answer: the model's response to evaluate
+   - context: (optional) additional context
+
+2. Run the evaluation:
+```bash
+python -m src.judgeflow.cli --dataset your_dataset.parquet --quick
 ```
+
+3. View the results:
+```bash
+python -m src.judgeflow.view_results
+```
+
+The results will show:
+- Row ID: Which test case was evaluated
+- Metric: Which evaluation metric was applied
+- Score: The evaluation score (0-10 scale)
+- Timestamp: When the evaluation was performed
+
+### Available Metrics
+
+The framework includes several pre-configured metrics:
+- Factuality: Measures factual accuracy (0-10)
+- Coherence: Evaluates text flow and readability (0-10)
+- Reasoning: Assesses logical soundness (0-10)
+- Toxicity: Checks for harmful content (0-10, lower is better)
+- Fairness (Gender): Evaluates gender bias (0-10)
+- Privacy (PII Leak): Detects personal information exposure (0-10)
+
+Each metric is defined in YAML format and can be customized or extended.
 
 ## Development
 
