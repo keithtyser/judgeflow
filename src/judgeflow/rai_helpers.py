@@ -1,20 +1,25 @@
 import numpy as np
 from typing import List, Union
+import re
+import warnings
 
-# Detoxify
-try:
-    from detoxify import Detoxify
-    _detox_model = Detoxify('original')
-except ImportError:
-    _detox_model = None
+# Detoxify: lazy load
+_detox_model = None
 
-# spaCy
+def _get_detox():
+    global _detox_model
+    if _detox_model is None:
+        from detoxify import Detoxify
+        _detox_model = Detoxify('original')
+    return _detox_model
+
+# spaCy: try to load, fallback to regex only
 try:
     import spacy
     _nlp = spacy.load('en_core_web_sm')
-except Exception:
+except Exception as e:
     _nlp = None
-import re
+    warnings.warn(f"spaCy model could not be loaded: {e}. Falling back to regex-only PII detection.")
 
 # 1. Fairness: Statistical Parity (SP) and TPR gap
 
@@ -56,17 +61,16 @@ def detoxify_toxicity(text: str) -> float:
     Return the toxicity score for a given text using Detoxify.
     Returns a float between 0 (not toxic) and 1 (highly toxic).
     """
-    if _detox_model is None:
-        raise ImportError("Detoxify is not installed or failed to load.")
-    scores = _detox_model.predict(text)
+    model = _get_detox()
+    scores = model.predict(text)
     return float(scores.get('toxicity', 0.0))
 
 # 3. spaCy + regex PII detection
 
 PII_REGEXES = [
-    re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"),  # Email
-    re.compile(r"\\b\\d{3}[-.]?\\d{3}[-.]?\\d{4}\\b"),  # US phone
-    re.compile(r"\\b\\d{9,}\\b"),  # Long numbers (SSN, credit card, etc.)
+    re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),  # Email
+    re.compile(r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"),  # US phone
+    re.compile(r"\b\d{9,}\b"),  # Long numbers (SSN, credit card, etc.)
 ]
 
 PII_ENTS = {"PERSON", "ORG", "GPE", "LOC", "DATE", "TIME", "MONEY", "CARDINAL"}
@@ -84,11 +88,14 @@ def detect_pii_spacy_regex(text: str) -> float:
             break
     # spaCy NER
     if not found and _nlp is not None:
-        doc = _nlp(text)
-        for ent in doc.ents:
-            if ent.label_ in PII_ENTS:
-                found = True
-                break
+        try:
+            doc = _nlp(text)
+            for ent in doc.ents:
+                if ent.label_ in PII_ENTS:
+                    found = True
+                    break
+        except Exception as e:
+            warnings.warn(f"spaCy NER failed: {e}. Using regex-only.")
     return 1.0 if found else 0.0
 
 if __name__ == "__main__":
