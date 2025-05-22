@@ -59,6 +59,25 @@ python -m src.judgeflow.cli --dataset path/to/dataset.parquet --quick
 - `agree_conf`: The agreement percentage, i.e., the % of 3 resampled scores within ±1 point of the original score
 - `timestamp`: When the evaluation was performed
 
+### Confidence Reliability: Calibration Curve
+
+You can generate a reliability diagram (calibration curve) to visualize how well the model's self-reported confidence aligns with actual correctness.
+
+- The script `plot_calibration_curve.py` reads `scores.csv` and plots a calibration curve using scikit-learn and matplotlib.
+- It uses the `self_conf` column (normalized to 0-1) as the model's confidence, and treats a score of 8 or higher (out of 10) as "correct".
+- The output is a PNG file (default: `calibration_curve.png`).
+
+**Usage:**
+```bash
+python plot_calibration_curve.py --csv scores.csv --output calibration_curve.png --bin_count 10 --threshold 8
+```
+- `--csv`: Path to your scores CSV (default: `scores.csv`)
+- `--output`: Output PNG file (default: `calibration_curve.png`)
+- `--bin_count`: Number of bins for the calibration curve (default: 10)
+- `--threshold`: Score threshold for correctness (default: 8.0)
+
+The resulting plot shows how well the model's confidence matches the actual fraction of correct answers. A perfectly calibrated model will follow the diagonal line.
+
 ### LLM Adapter (`llm.py`)
 
 The LLM adapter provides a robust interface to GPT-4 with built-in retry functionality and error handling.
