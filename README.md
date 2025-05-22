@@ -2,6 +2,29 @@
 
 JudgeFlow is a framework for evaluating and analyzing AI model outputs with a focus on responsible AI practices.
 
+## Quickstart: Setup & Mini Datasets
+
+1. **Install dependencies:**
+   ```bash
+   pip install pandas pyarrow datasets tiktoken
+   ```
+
+2. **Download mini datasets:**
+   - Run the script to fetch 20 rows each from TruthfulQA, Jigsaw, and MMLU:
+     ```bash
+     python download_mini_datasets.py
+     ```
+   - **Jigsaw Note:** You must manually download the Jigsaw dataset from Kaggle (https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge/data), extract it to a folder named `jigsaw_data` in the project root, and then run the script.
+   - The datasets will be saved as Parquet files in the `datasets/` directory. Total token count is kept under 8,000 for quick testing.
+
+3. **Set your OpenAI API key:**
+   ```bash
+   # Windows PowerShell
+   $env:OPENAI_API_KEY = "your-key-here"
+   # Unix/Linux
+   export OPENAI_API_KEY="your-key-here"
+   ```
+
 ## Core Modules
 
 ### Runner Core (`runner.py` & `cli.py`)
@@ -106,31 +129,16 @@ confidence_prompt: How confident are you...
 
 ## Setup
 
-1. Install dependencies:
-```bash
-poetry install
-```
-
-2. Set your OpenAI API key:
-```bash
-# Windows PowerShell
-$env:OPENAI_API_KEY = "your-key-here"
-
-# Unix/Linux
-export OPENAI_API_KEY="your-key-here"
-```
-
-3. Create metric specifications in the `metrics/` directory using YAML format.
+- Python 3.11+
+- Use `pip` for dependency management (no longer using Poetry)
+- Async/await pattern for API interactions
+- YAML for metric specifications
 
 ## Usage
 
 ### Running Evaluations
 
-1. Prepare your dataset in parquet format with columns:
-   - id: unique identifier for each row
-   - question: the input question/prompt
-   - answer: the model's response to evaluate
-   - context: (optional) additional context
+1. Prepare your dataset in parquet format (see above for mini datasets or use your own)
 
 2. Run the evaluation:
 ```bash
@@ -168,6 +176,6 @@ Each metric is defined in YAML format and can be customized or extended.
 ## Development
 
 - Python 3.11+
-- Poetry for dependency management
+- Use `pip` for dependency management (no longer using Poetry)
 - Async/await pattern for API interactions
 - YAML for metric specifications
