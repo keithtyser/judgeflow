@@ -49,8 +49,13 @@ class Runner:
         class SafeDict(dict):
             def __missing__(self, key):
                 return ""
-        # Format the prompt template with row data, using SafeDict
-        prompt = metric.prompt_template.format_map(SafeDict(row))
+        # Compute calibration gap stats if needed
+        if metric.name.lower() == "calibration gap":
+            from .rai_helpers import calibration_gap
+            stats = calibration_gap(row['y_true'], row['y_prob'], row['group_attr'])
+            prompt = metric.prompt_template.format_map(SafeDict({**row, **stats}))
+        else:
+            prompt = metric.prompt_template.format_map(SafeDict(row))
         
         # Get response from LLM
         response = await chat(prompt)

@@ -119,29 +119,55 @@ def equal_opportunity(y_true, y_pred, sensitive):
     ratio = equalized_odds_ratio(y_true, y_pred, sensitive, method='threshold')
     return {"eo_diff": float(diff), "eo_ratio": float(ratio)}
 
-def calibration_gap(y_true, y_prob, sensitive, n_bins: int = 10):
+def calibration_gap(
+    y_true: List[int],
+    y_prob: List[float],
+    sensitive_attr: List[Union[str, int]],
+    n_bins: int = 10
+) -> dict:
     """
-    Per-group calibration gap (max over groups of |accuracy - confidence|).
-    y_prob must be calibrated model scores or probabilities.
+    Per-group calibration gap: max over groups of | accuracy − confidence |.
+    Args
+    ----
+    y_true : binary ground-truth labels (0 / 1)
+    y_prob : predicted probability for the positive class (float 0-1)
+    sensitive_attr : group label for each sample
+    n_bins : number of reliability bins
+    Returns
+    -------
+    dict with {'calib_gap': float, 'group_gaps': dict}
     """
-    groups = set(sensitive)
-    gaps = []
-    for g in groups:
-        idx = [i for i, s in enumerate(sensitive) if s == g]
-        if not idx:
+    y_true  = np.asarray(y_true)
+    y_prob  = np.asarray(y_prob)
+    groups  = np.asarray(sensitive_attr)
+
+    unique_groups = np.unique(groups)
+    group_gaps = {}
+
+    # bin boundaries
+    bins = np.linspace(0.0, 1.0, n_bins + 1)
+
+    for g in unique_groups:
+        mask  = groups == g
+        if mask.sum() == 0:
             continue
-        prob = np.asarray(y_prob)[idx]
-        acc  = np.asarray(y_true)[idx]
-        bins = np.linspace(0, 1, n_bins + 1)
-        bin_ids = np.digitize(prob, bins) - 1
-        gap = 0.0
+        prob_g = y_prob[mask]
+        true_g = y_true[mask]
+
+        # reliability diagram in n_bins
+        digitized = np.digitize(prob_g, bins) - 1
+        max_gap = 0.0
         for b in range(n_bins):
-            mask = bin_ids == b
-            if mask.sum() == 0:
+            bin_mask = digitized == b
+            if bin_mask.sum() == 0:
                 continue
-            gap = max(gap, abs(acc[mask].mean() - prob[mask].mean()))
-        gaps.append(gap)
-    return {"calib_gap": float(max(gaps) if gaps else 0.0)}
+            conf = prob_g[bin_mask].mean()
+            acc  = true_g[bin_mask].mean()
+            max_gap = max(max_gap, abs(acc - conf))
+        group_gaps[g] = float(max_gap)
+
+    overall_gap = float(max(group_gaps.values()) if group_gaps else 0.0)
+    return {"calib_gap": overall_gap, "group_gaps": group_gaps}
 
 if __name__ == "__main__":
     # Example 1: Fairness (SP & TPR gap)
