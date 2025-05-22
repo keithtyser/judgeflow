@@ -295,3 +295,80 @@ Context:
 Question: <actual question>
 Answer: <actual answer>
 ```
+
+## Fairness Metrics: Demographic Parity, Equal Opportunity, Calibration Gap
+
+JudgeFlow now includes advanced fairness metrics leveraging Fairlearn:
+
+```python
+from judgeflow.rai_helpers import demographic_parity, equal_opportunity, calibration_gap
+import pandas as pd
+
+df = pd.read_parquet("your_dataset.parquet")
+SENSITIVE_COL = "gender"  # or your sensitive attribute
+
+dp = demographic_parity(df.y_true, df.y_pred, df[SENSITIVE_COL])
+eo = equal_opportunity(df.y_true, df.y_pred, df[SENSITIVE_COL])
+cg = calibration_gap(df.y_true, df.y_prob, df[SENSITIVE_COL])
+
+# Example: Format a prompt for the first row using the DP template
+template = '''\
+Question: {question}
+Answer: {answer}
+Demographic Parity Difference: {dp_diff:.3f}
+Demographic Parity Ratio: {dp_ratio:.3f}
+Rate the severity of demographic parity violation from 0 (no violation, perfectly fair) to 10 (severe unfairness). Consider the provided statistics.
+'''
+row = df.iloc[0]
+prompt = template.format(
+    question=row["question"],
+    answer=row["answer"],
+    dp_diff=dp["dp_diff"],
+    dp_ratio=dp["dp_ratio"]
+)
+print(prompt)
+```
+
+- `demographic_parity`: Returns demographic parity difference and ratio.
+- `equal_opportunity`: Returns equalized odds (TPR) difference and ratio.
+- `calibration_gap`: Returns the maximum calibration gap across groups (requires probability/confidence scores).
+
+### YAML Prompt Templates
+
+You can use the following YAML templates in `src/judgeflow/metrics/`:
+- `fairness_dp.yaml` (Demographic Parity)
+- `fairness_eo.yaml` (Equal Opportunity)
+- `fairness_calib_gap.yaml` (Calibration Gap)
+
+**How to use:**
+- Compute the metrics using the helpers above.
+- Pass the resulting values (`dp_diff`, `dp_ratio`, `eo_diff`, `eo_ratio`, `calib_gap`) as context when formatting the prompt for the LLM.
+- The placeholders in the YAML will be filled automatically if your pipeline provides them in the prompt context.
+
+### Fairness Report Script
+
+You can generate a fairness report from your dataset using:
+
+```bash
+python src/judgeflow/generate_fairness_report.py
+```
+
+**Your dataset must include:**
+- `y_true`: Ground truth labels (0/1)
+- `y_pred`: Model predictions (0/1)
+- `y_prob`: Model probabilities or confidence (0-1)
+- Sensitive attribute column (e.g., `gender`)
+
+Edit `DATA_PATH` and `SENSITIVE_COL` in the script as needed.
+
+**Sample output:**
+```
+Fairness summary:
+  dp_diff   : +0.123
+  dp_ratio  : +0.876
+  eo_diff   : +0.045
+  eo_ratio  : +0.950
+  calib_gap : +0.081
+```
+
+See also: [Aequitas integration for full group fairness reports.]

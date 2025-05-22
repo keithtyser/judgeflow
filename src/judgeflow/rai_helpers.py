@@ -3,6 +3,12 @@ import numpy as np
 from typing import List, Union
 import re
 import warnings
+from fairlearn.metrics import (
+    demographic_parity_difference,
+    demographic_parity_ratio,
+    equalized_odds_difference,
+    equalized_odds_ratio
+)
 
 # Detoxify: lazy load
 _detox_model = None
@@ -98,6 +104,44 @@ def detect_pii_spacy_regex(text: str) -> float:
         except Exception as e:
             warnings.warn(f"spaCy NER failed: {e}. Using regex-only.")
     return 1.0 if found else 0.0
+
+# Calibration gap (probability calibration)
+
+def demographic_parity(y_true, y_pred, sensitive):
+    """Return (difference, ratio)."""
+    diff = demographic_parity_difference(y_true, y_pred, sensitive)
+    ratio = demographic_parity_ratio(y_true, y_pred, sensitive)
+    return {"dp_diff": float(diff), "dp_ratio": float(ratio)}
+
+def equal_opportunity(y_true, y_pred, sensitive):
+    """Return (difference, ratio) of TPRs."""
+    diff = equalized_odds_difference(y_true, y_pred, sensitive, method='threshold')
+    ratio = equalized_odds_ratio(y_true, y_pred, sensitive, method='threshold')
+    return {"eo_diff": float(diff), "eo_ratio": float(ratio)}
+
+def calibration_gap(y_true, y_prob, sensitive, n_bins: int = 10):
+    """
+    Per-group calibration gap (max over groups of |accuracy - confidence|).
+    y_prob must be calibrated model scores or probabilities.
+    """
+    groups = set(sensitive)
+    gaps = []
+    for g in groups:
+        idx = [i for i, s in enumerate(sensitive) if s == g]
+        if not idx:
+            continue
+        prob = np.asarray(y_prob)[idx]
+        acc  = np.asarray(y_true)[idx]
+        bins = np.linspace(0, 1, n_bins + 1)
+        bin_ids = np.digitize(prob, bins) - 1
+        gap = 0.0
+        for b in range(n_bins):
+            mask = bin_ids == b
+            if mask.sum() == 0:
+                continue
+            gap = max(gap, abs(acc[mask].mean() - prob[mask].mean()))
+        gaps.append(gap)
+    return {"calib_gap": float(max(gaps) if gaps else 0.0)}
 
 if __name__ == "__main__":
     # Example 1: Fairness (SP & TPR gap)

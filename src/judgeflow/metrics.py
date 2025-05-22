@@ -1,7 +1,7 @@
 import os
 import re
 from typing import List, Callable, Any
-import yaml  # Note: Requires PyYAML to be installed (e.g., poetry add PyYAML)
+import yaml 
 from pydantic import BaseModel
 
 class MetricSpec(BaseModel):
@@ -16,7 +16,7 @@ class MetricSpec(BaseModel):
     def parse_score(self, text: str) -> float:
         """Parse the score from text using the specified parser."""
         if self.parser.startswith("regex:"):
-            pattern = self.parser[6:]  # Remove "regex:" prefix
+            pattern = self.parser[6:] 
             match = re.search(pattern, text)
             if match:
                 try:
@@ -57,8 +57,5 @@ def load_registry(registry_path: str = None) -> List[MetricSpec]:
     return metric_specs
 
 if __name__ == "__main__":
-    # This test assumes the 'metrics' directory is located at the project root,
-    # and this script is run in a context where "metrics" resolves correctly
-    # (e.g., run from the project root: python judgeflow/metrics.py or python -m judgeflow.metrics).
     loaded_metrics = load_registry()
     print(f"Loaded {len(loaded_metrics)} metrics:") 

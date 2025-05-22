@@ -1,7 +1,7 @@
 name: "Coherence"
 description: "Measures how well-structured, logical, and easy to follow the model's output is."
 prompt_template: "Question: {question}\nAnswer: {answer}\nRate the coherence of this answer from 0 (completely incoherent) to 10 (perfectly coherent). Consider clarity, logical flow, and organization."
-parser: 'regex:(\d+(?:\.\d+)?)'  # Extracts a float
+parser: 'regex:(\d+(?:\.\d+)?)' 
 rai_category: "Quality & Reliability"
 reflection_prompt: "The initial coherence score was {score}.\nQuestion: {question}\nAnswer: {answer}\nPlease provide a revised score (number only, 0-10) as 'Revised score: X' and a brief critique."
 confidence_prompt: "How confident are you (0-100) in your coherence score of {score} for the answer: {answer}?" 
