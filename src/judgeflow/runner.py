@@ -31,12 +31,10 @@ class Runner:
         return scores
     
     async def evaluate_row(self, row: Dict[Any, Any]) -> List[Dict]:
-        """Evaluate a single row using all metrics."""
-        scores = []
-        for metric in self.metrics:
-            score = await self._apply_metric(row, metric)
-            scores.append(score)
-        return scores
+        """Evaluate a single row using all metrics in parallel."""
+        tasks = [self._apply_metric(row, m) for m in self.metrics]
+        row_scores = await asyncio.gather(*tasks)
+        return row_scores
     
     async def _apply_metric(self, row: Dict[Any, Any], metric: MetricSpec) -> Dict:
         """Apply a single metric to a row."""
@@ -76,7 +74,7 @@ class Runner:
                 revised_score = None
         # Fallback: first number 0-10 in the response
         if revised_score is None:
-            match = re.search(r"\b([0-9](?:\.[0-9]+)?|10(?:\.0+)?)\b", reflection_response)
+            match = re.search(r"\b([0-9](?:\.[0-9]+)?|10(?:\.0+)?)\b(?!\d)", reflection_response)
             if match:
                 try:
                     revised_score = float(match.group(1))
