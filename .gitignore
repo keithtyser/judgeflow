@@ -37,4 +37,5 @@ ENV/
 scores.db
 *.db
 *.parquet
-implementation-plan.md 
+implementation-plan.md
+jigsaw_data/ 

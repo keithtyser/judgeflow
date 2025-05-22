@@ -228,3 +228,32 @@ Each metric is defined in YAML format and can be customized or extended.
 - Use `pip` for dependency management (no longer using Poetry)
 - Async/await pattern for API interactions
 - YAML for metric specifications
+
+## DeepEval G-Eval Integration (Coherence)
+
+JudgeFlow now supports running DeepEval's G-Eval for the "coherence" metric via a CLI flag. This allows you to:
+- Run G-Eval for coherence on your dataset with a single flag
+- Print G-Eval scores to the console
+- Store G-Eval scores in your CSV output as a new metric (`coherence_g_eval`)
+
+### Usage
+
+1. **Install DeepEval:**
+   ```bash
+   pip install deepeval
+   ```
+2. **Set your DeepEval API key:**
+   ```powershell
+   $env:DEEPEVAL_KEY = "your-deepeval-key-here"
+   ```
+3. **Run evaluation with G-Eval:**
+   ```bash
+   python -m src.judgeflow.cli --dataset path/to/dataset.parquet --deepeval
+   ```
+
+- The CLI will print G-Eval coherence scores for each row.
+- The scores will be appended to your CSV output with `metric` set to `coherence_g_eval`.
+
+**Note:**
+- The `DEEPEVAL_KEY` environment variable is required for G-Eval.
+- G-Eval scores are stored in the same CSV as other metrics, with only `row_id`, `metric`, and `score` filled for these rows.

@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 import pandas as pd
 import csv
 import re
+import os
 
 from .models import Score
 from .metrics import load_registry, MetricSpec
@@ -151,4 +152,73 @@ class Runner:
                     score.self_conf if score.self_conf is not None else "",
                     score.agree_conf if score.agree_conf is not None else "",
                     score.timestamp.isoformat() if score.timestamp else ""
-                ]) 
+                ])
+
+def run_deepeval_coherence(dataset_path: Path):
+    """Run DeepEval G-Eval for the coherence metric on each row in the dataset."""
+    try:
+        from deepeval.metrics import GEval
+        from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+    except ImportError:
+        print("DeepEval is not installed. Please install it with 'pip install deepeval'.")
+        return []
+
+    deepeval_key = os.environ.get("DEEPEVAL_KEY")
+    if not deepeval_key:
+        print("DEEPEVAL_KEY environment variable is not set.")
+        return []
+
+    import pandas as pd
+    df = pd.read_parquet(dataset_path)
+    results = []
+
+    # Find the coherence metric definition
+    from .metrics import load_registry
+    metrics = load_registry()
+    coherence_metric = next((m for m in metrics if m.name.lower() == "coherence"), None)
+    if not coherence_metric:
+        print("Coherence metric not found in registry.")
+        return []
+
+    # Prepare G-Eval metric
+    coherence_geval = GEval(
+        name="Coherence",
+        criteria="Measures how well-structured, logical, and easy to follow the model's output is.",
+        evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT],
+        threshold=0.0  # No threshold for reporting
+    )
+
+    for _, row in df.iterrows():
+        # Use the same fields as in the prompt_template
+        question = row.get("question", "")
+        answer = row.get("answer", "")
+        row_id = row.get("id", "unknown")
+        test_case = LLMTestCase(
+            input=question,
+            actual_output=answer
+        )
+        try:
+            coherence_geval.measure(test_case)
+            score = coherence_geval.score
+        except Exception as e:
+            score = None
+            print(f"DeepEval error for row {row_id}: {e}")
+        results.append((row_id, score))
+    return results
+
+def write_geval_scores_to_csv(csv_path: str, geval_scores):
+    """Append G-Eval coherence scores to the CSV output."""
+    write_header = not Path(csv_path).exists()
+    with open(csv_path, mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if write_header:
+            writer.writerow([
+                "row_id", "metric", "score", "revised_score", "revision_delta", "critique", "self_conf", "agree_conf", "timestamp"
+            ])
+        for row_id, score in geval_scores:
+            writer.writerow([
+                row_id,
+                "coherence_g_eval",
+                score if score is not None else "",
+                "", "", "", "", "", ""
+            ]) 
