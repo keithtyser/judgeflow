@@ -1,6 +1,5 @@
 
 # JudgeFlow 🚦 – Modular, Responsible LLM Evaluation Framework
-> **Ship trustworthy AI in days, not months.**  
 > Plug‑in new metrics by dropping a YAML, run one command, get a CSV‑grade‑sheet & reliability diagram.
 
 ---
@@ -24,7 +23,7 @@
 
 ```bash
 pip install -r requirements.txt                       # 1. deps
-python download_mini_datasets.py                      # 2. 60‑row toy data
+python download_mini_datasets.py                      # 2. test on 60‑row toy data
 export OPENAI_API_KEY=sk‑...                          # 3. key
 python -m src.judgeflow.cli -d datasets/mmlu.parquet  # 4. go!
 open scores.csv                                       # 5. inspect
@@ -108,10 +107,10 @@ Each YAML can inject pre‑computed numbers (`dp_diff`, `calib_gap`, …) produc
 * **Language‑agnostic Safety** – plug in multilingual Detoxicity models & spaCy pipelines.  
 * **Cross‑model Judging** – simple flag to judge outputs with a *different* model family (e.g., GPT‑4 evals Llama‑2).  
 * **Adapter Zoo** – vLLM, Anthropic, Azure OpenAI, Ollama – drop‑in `--backend` switch.  
-* **Batch Optimisation** – smart prompt packing & caching to slash eval cost.  
+* **Batch Optimization** – smart prompt packing & caching to slash eval cost.  
 * **Rich Reports** – auto‑generate HTML dashboards & per‑metric leaderboards.
 
-I spun this prototype up in a weekend – imagine the velocity with a full‑time seat 🚀.
+I spun this prototype up in a day – imagine the velocity with a full‑time seat 🚀.
 
 ---
 
