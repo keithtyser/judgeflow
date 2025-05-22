@@ -6,7 +6,6 @@ import csv
 import re
 import os
 
-from .models import Score
 from .metrics import load_registry, MetricSpec
 from .llm import chat
 
@@ -15,7 +14,7 @@ class Runner:
         self.csv_path = csv_path
         self.metrics = load_registry()
     
-    async def evaluate_dataset(self, dataset_path: Path, quick: bool = False) -> List[Score]:
+    async def evaluate_dataset(self, dataset_path: Path, quick: bool = False) -> List[Dict]:
         """Evaluate a dataset using all registered metrics."""
         df = pd.read_parquet(dataset_path)
         if quick:
@@ -31,7 +30,7 @@ class Runner:
         
         return scores
     
-    async def evaluate_row(self, row: Dict[Any, Any]) -> List[Score]:
+    async def evaluate_row(self, row: Dict[Any, Any]) -> List[Dict]:
         """Evaluate a single row using all metrics."""
         scores = []
         for metric in self.metrics:
@@ -39,7 +38,7 @@ class Runner:
             scores.append(score)
         return scores
     
-    async def _apply_metric(self, row: Dict[Any, Any], metric: MetricSpec) -> Score:
+    async def _apply_metric(self, row: Dict[Any, Any], metric: MetricSpec) -> Dict:
         """Apply a single metric to a row."""
         # Format the prompt template with row data
         prompt = metric.prompt_template.format(**row)
@@ -121,18 +120,18 @@ class Runner:
         agree_count = sum(1 for s in resample_scores if abs(s - score_value) <= 1.0)
         agree_conf = (agree_count / 3) * 100 if resample_scores else None
 
-        return Score(
-            row_id=str(row.get("id", "unknown")),
-            metric=metric.name,
-            score=score_value,
-            revised_score=revised_score,
-            revision_delta=revision_delta,
-            critique=critique,
-            self_conf=self_conf,
-            agree_conf=agree_conf
-        )
+        return {
+            "row_id": str(row.get("id", "unknown")),
+            "metric": metric.name,
+            "score": score_value,
+            "revised_score": revised_score,
+            "revision_delta": revision_delta,
+            "critique": critique,
+            "self_conf": self_conf,
+            "agree_conf": agree_conf
+        }
 
-    def _write_scores_to_csv(self, scores: List[Score]):
+    def _write_scores_to_csv(self, scores: List[Dict]):
         # Write header if file does not exist
         write_header = not Path(self.csv_path).exists()
         with open(self.csv_path, mode='a', newline='', encoding='utf-8') as f:
@@ -143,15 +142,15 @@ class Runner:
                 ])
             for score in scores:
                 writer.writerow([
-                    score.row_id,
-                    score.metric,
-                    score.score,
-                    score.revised_score if score.revised_score is not None else "",
-                    score.revision_delta if score.revision_delta is not None else "",
-                    score.critique if score.critique is not None else "",
-                    score.self_conf if score.self_conf is not None else "",
-                    score.agree_conf if score.agree_conf is not None else "",
-                    score.timestamp.isoformat() if score.timestamp else ""
+                    score["row_id"],
+                    score["metric"],
+                    score["score"],
+                    score["revised_score"] if score["revised_score"] is not None else "",
+                    score["revision_delta"] if score["revision_delta"] is not None else "",
+                    score["critique"] if score["critique"] is not None else "",
+                    score["self_conf"] if score["self_conf"] is not None else "",
+                    score["agree_conf"] if score["agree_conf"] is not None else "",
+                    score["timestamp"].isoformat() if score["timestamp"] else ""
                 ])
 
 def run_deepeval_coherence(dataset_path: Path):

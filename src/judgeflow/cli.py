@@ -24,7 +24,7 @@ def main(
         if deepeval:
             # Run DeepEval G-Eval for coherence
             from .runner import run_deepeval_coherence, write_geval_scores_to_csv
-            g_eval_scores = asyncio.run(run_deepeval_coherence(dataset_path))
+            g_eval_scores = run_deepeval_coherence(dataset_path)
             typer.echo("DeepEval G-Eval scores for coherence:")
             for row_id, score in g_eval_scores:
                 typer.echo(f"Row {row_id}: {score}")

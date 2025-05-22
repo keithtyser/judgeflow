@@ -214,9 +214,7 @@ python -m src.judgeflow.cli --dataset your_dataset.parquet --quick
 ```
 
 3. View the results:
-```bash
-python -m src.judgeflow.view_results
-```
+# Open scores.csv in Excel, Python (pandas), or any spreadsheet tool to inspect the evaluation results.
 
 The results will show:
 - Row ID: Which test case was evaluated
