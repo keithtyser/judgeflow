@@ -6,7 +6,7 @@
 
 ## ✨ Why JudgeFlow?
 
-| Feature | JudgeFlow | Existing toolkits* |
+| Feature | JudgeFlow | Existing toolkits |
 |---------|-----------|--------------------|
 | **Metric as YAML** | **Yes - drop a file, no code** | Hard-coded in Python |
 | **Responsible-AI coverage** | Truthfulness, toxicity, fairness, privacy, calibration | Mostly quality metrics |
