@@ -8,7 +8,7 @@
 
 | Feature | JudgeFlow | Existing toolkits* |
 |---------|-----------|--------------------|
-| **Metric as YAML** | **Yes – drop a file, no code** | Hard-coded in Python |
+| **Metric as YAML** | **Yes - drop a file, no code** | Hard-coded in Python |
 | **Responsible-AI coverage** | Truthfulness, toxicity, fairness, privacy, calibration | Mostly quality metrics |
 | **Score reliability** | Self-reflection + agreement checks | Rarely included |
 | **Confidence calibration** | Built-in calibration curve | Not available |
