@@ -152,11 +152,10 @@ JudgeFlow now includes standalone Responsible AI (RAI) helper functions for fair
 
 ### Installation
 
-You will need to install additional dependencies:
+To install all required dependencies, run:
 
 ```bash
-pip install detoxify spacy
-python -m spacy download en_core_web_sm
+pip install -r requirements.txt
 ```
 
 ### Usage Example

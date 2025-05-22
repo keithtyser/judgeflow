@@ -1,3 +1,4 @@
+"""Responsible-AI helper functions"""
 import numpy as np
 from typing import List, Union
 import re

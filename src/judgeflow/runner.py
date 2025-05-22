@@ -5,6 +5,7 @@ import pandas as pd
 import csv
 import re
 import os
+from datetime import datetime
 
 from .metrics import load_registry, MetricSpec
 from .llm import chat
@@ -21,9 +22,15 @@ class Runner:
             df = df.head(3)  # Only process 3 rows in quick mode
         
         scores = []
-        for _, row in df.iterrows():
-            row_scores = await self.evaluate_row(row)
-            scores.extend(row_scores)
+        if len(df) > 3:
+            # Parallelize row evaluation for speed
+            all_row_scores = await asyncio.gather(*[self.evaluate_row(row) for _, row in df.iterrows()])
+            for row_scores in all_row_scores:
+                scores.extend(row_scores)
+        else:
+            for _, row in df.iterrows():
+                row_scores = await self.evaluate_row(row)
+                scores.extend(row_scores)
         
         # Write all scores to CSV
         self._write_scores_to_csv(scores)
@@ -47,6 +54,7 @@ class Runner:
         # Parse the score using metric's parser
         try:
             score_value = metric.parse_score(response)
+            score_value = max(0, min(score_value, 10))
         except ValueError as e:
             print(f"Warning: Failed to parse score for metric {metric.name}: {e}")
             score_value = 0.0  # Default score on parsing failure
@@ -70,6 +78,7 @@ class Runner:
         if match:
             try:
                 revised_score = float(match.group(1))
+                revised_score = max(0, min(revised_score, 10))
             except Exception:
                 revised_score = None
         # Fallback: first number 0-10 in the response
@@ -78,6 +87,7 @@ class Runner:
             if match:
                 try:
                     revised_score = float(match.group(1))
+                    revised_score = max(0, min(revised_score, 10))
                 except Exception:
                     revised_score = None
         # Calculate revision_delta
@@ -118,6 +128,9 @@ class Runner:
         agree_count = sum(1 for s in resample_scores if abs(s - score_value) <= 1.0)
         agree_conf = (agree_count / 3) * 100 if resample_scores else None
 
+        # Add timestamp
+        timestamp = datetime.utcnow()
+
         return {
             "row_id": str(row.get("id", "unknown")),
             "metric": metric.name,
@@ -126,7 +139,8 @@ class Runner:
             "revision_delta": revision_delta,
             "critique": critique,
             "self_conf": self_conf,
-            "agree_conf": agree_conf
+            "agree_conf": agree_conf,
+            "timestamp": timestamp
         }
 
     def _write_scores_to_csv(self, scores: List[Dict]):
