@@ -8,6 +8,9 @@ class Score(SQLModel, table=True):
     row_id: str = Field(index=True)
     metric: str = Field(index=True)
     score: float
+    revised_score: Optional[float] = None
+    revision_delta: Optional[float] = None
+    critique: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:

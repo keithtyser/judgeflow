@@ -3,5 +3,5 @@ description: "Evaluates the quality of logical reasoning and problem-solving in 
 prompt_template: "Question: {question}\nAnswer: {answer}\nRate the quality of reasoning in this answer from 0 (poor reasoning) to 10 (excellent reasoning). Consider logical steps, evidence use, and conclusions."
 parser: 'regex:(\d+(?:\.\d+)?)'  # Extracts a float
 rai_category: "Quality & Reliability"
-reflection_prompt: "The initial reasoning score was {score}. Please analyze the logical steps and evidence presented. Are there any gaps in reasoning or unsupported conclusions? Provide a revised score and explanation."
+reflection_prompt: "The initial reasoning score was {score}.\nQuestion: {question}\nAnswer: {answer}\nPlease provide a revised score (number only, 0-10) as 'Revised score: X' and a brief critique."
 confidence_prompt: "How confident are you (0-100) in your reasoning score of {score} for the answer: {answer}?" 

@@ -6,22 +6,32 @@ JudgeFlow is a framework for evaluating and analyzing AI model outputs with a fo
 
 ### Runner Core (`runner.py` & `cli.py`)
 
-The runner core provides functionality to evaluate datasets using multiple metrics and store results in a SQLite database.
+The runner core provides functionality to evaluate datasets using multiple metrics and store results in a CSV file.
 
 ```bash
 # Run evaluation on a dataset
 python -m src.judgeflow.cli --dataset path/to/dataset.parquet --quick
 
-# View evaluation results
-python -m src.judgeflow.view_results
+# View evaluation results (open scores.csv in Excel, Python, etc.)
 ```
 
 **Features:**
 - Parallel evaluation across multiple metrics
-- SQLite storage with SQLModel ORM
+- CSV storage for easy inspection and portability
 - Quick evaluation mode for rapid testing
 - Structured results with timestamps
-- Pretty-printed results viewing
+- **Self-reflection:** After the initial score, the LLM critiques its own answer and provides a revised score. The difference (`revision_delta`) and the critique are stored in the CSV file.
+- **Context-rich prompts:** Self-reflection prompts now include all relevant context (question, answer, etc.) and instruct the LLM to output a revised score as 'Revised score: X'.
+- **Robust parsing:** The system first looks for 'Revised score: X' in the LLM output, then falls back to the first number 0-10.
+
+#### Score Table Schema
+- `row_id`: Which test case was evaluated
+- `metric`: Which evaluation metric was applied
+- `score`: The initial evaluation score (0-10 scale)
+- `revised_score`: The LLM's revised score after self-reflection (optional)
+- `revision_delta`: The difference between revised and initial score (optional)
+- `critique`: The LLM's self-critique or explanation (optional)
+- `timestamp`: When the evaluation was performed
 
 ### LLM Adapter (`llm.py`)
 
@@ -71,7 +81,7 @@ description: Measures factual accuracy of responses
 prompt_template: Rate the factual accuracy...
 parser: float_0_10
 rai_category: reliability
-reflection_prompt: Explain your rating...
+reflection_prompt: The initial score for factuality was {score}.\nContext: {context}\nQuestion: {question}\nAnswer: {answer}\nPlease provide a revised score (number only, 0-10) as 'Revised score: X' and a brief critique.
 confidence_prompt: How confident are you...
 """
 ```
@@ -84,8 +94,12 @@ confidence_prompt: How confident are you...
   - Prompt templates
   - Response parsing rules
   - RAI categorization
-  - Reflection and confidence prompts
+  - Reflection and confidence prompts (now context-rich and parseable)
 - Robust error handling for YAML parsing and validation
+
+**Tip:**
+- For best results, ensure your metric YAMLs' `reflection_prompt` includes all relevant context and instructs the LLM to output a revised score as 'Revised score: X'.
+- If you see parsing errors or generic critiques, check that your dataset includes all required fields (e.g., question, answer, context).
 
 ## Setup
 
@@ -128,7 +142,10 @@ python -m src.judgeflow.view_results
 The results will show:
 - Row ID: Which test case was evaluated
 - Metric: Which evaluation metric was applied
-- Score: The evaluation score (0-10 scale)
+- Score: The initial evaluation score (0-10 scale)
+- Revised Score: The LLM's revised score after self-reflection (if available)
+- Revision Delta: The difference between revised and initial score (if available)
+- Critique: The LLM's self-critique or explanation (if available)
 - Timestamp: When the evaluation was performed
 
 ### Available Metrics

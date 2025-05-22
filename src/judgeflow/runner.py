@@ -2,16 +2,16 @@ import asyncio
 from pathlib import Path
 from typing import List, Dict, Any
 import pandas as pd
-from sqlmodel import Session, SQLModel, create_engine
+import csv
+import re
 
 from .models import Score
 from .metrics import load_registry, MetricSpec
 from .llm import chat
 
 class Runner:
-    def __init__(self, db_path: str = "scores.db"):
-        self.engine = create_engine(f"sqlite:///{db_path}", echo=False)
-        SQLModel.metadata.create_all(self.engine)
+    def __init__(self, csv_path: str = "scores.csv"):
+        self.csv_path = csv_path
         self.metrics = load_registry()
     
     async def evaluate_dataset(self, dataset_path: Path, quick: bool = False) -> List[Score]:
@@ -24,11 +24,9 @@ class Runner:
         for _, row in df.iterrows():
             row_scores = await self.evaluate_row(row)
             scores.extend(row_scores)
-            
-        with Session(self.engine) as session:
-            for score in scores:
-                session.add(score)
-            session.commit()
+        
+        # Write all scores to CSV
+        self._write_scores_to_csv(scores)
         
         return scores
     
@@ -54,9 +52,68 @@ class Runner:
         except ValueError as e:
             print(f"Warning: Failed to parse score for metric {metric.name}: {e}")
             score_value = 0.0  # Default score on parsing failure
-            
+
+        # --- Self-reflection step ---
+        # Prepare the reflection prompt (inject score and row fields)
+        reflection_context = dict(row)
+        reflection_context['score'] = score_value
+        reflection_prompt = metric.reflection_prompt.format(**reflection_context)
+        # Enforce 256-token limit (approx 1024 chars, conservative)
+        max_chars = 1024
+        if len(reflection_prompt) > max_chars:
+            reflection_prompt = reflection_prompt[:max_chars]
+        
+        # Get critique and revised score from LLM
+        reflection_response = await chat(reflection_prompt)
+        # Try to parse revised score
+        revised_score = None
+        # First, look for 'Revised score: X' (case-insensitive)
+        match = re.search(r"Revised score[:\s]*([0-9]+(?:\.[0-9]+)?)", reflection_response, re.IGNORECASE)
+        if match:
+            try:
+                revised_score = float(match.group(1))
+            except Exception:
+                revised_score = None
+        # Fallback: first number 0-10 in the response
+        if revised_score is None:
+            match = re.search(r"\b([0-9](?:\.[0-9]+)?|10(?:\.0+)?)\b", reflection_response)
+            if match:
+                try:
+                    revised_score = float(match.group(1))
+                except Exception:
+                    revised_score = None
+        # Calculate revision_delta
+        revision_delta = None
+        if revised_score is not None:
+            revision_delta = revised_score - score_value
+        # Store critique (full reflection response)
+        critique = reflection_response
+        
         return Score(
             row_id=str(row.get("id", "unknown")),
             metric=metric.name,
-            score=score_value
-        ) 
+            score=score_value,
+            revised_score=revised_score,
+            revision_delta=revision_delta,
+            critique=critique
+        )
+
+    def _write_scores_to_csv(self, scores: List[Score]):
+        # Write header if file does not exist
+        write_header = not Path(self.csv_path).exists()
+        with open(self.csv_path, mode='a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            if write_header:
+                writer.writerow([
+                    "row_id", "metric", "score", "revised_score", "revision_delta", "critique", "timestamp"
+                ])
+            for score in scores:
+                writer.writerow([
+                    score.row_id,
+                    score.metric,
+                    score.score,
+                    score.revised_score if score.revised_score is not None else "",
+                    score.revision_delta if score.revision_delta is not None else "",
+                    score.critique if score.critique is not None else "",
+                    score.timestamp.isoformat() if score.timestamp else ""
+                ]) 

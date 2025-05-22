@@ -7,10 +7,10 @@ from .runner import Runner
 def main(
     dataset: str = typer.Option(..., "--dataset", "-d", help="Path to dataset parquet file"),
     quick: bool = typer.Option(False, "--quick", "-q", help="Run quick evaluation on subset of data"),
-    db_path: str = typer.Option("scores.db", "--db", help="Path to SQLite database")
+    csv_path: str = typer.Option("scores.csv", "--csv", help="Path to output CSV file")
 ):
     """Run evaluation on a dataset using all registered metrics."""
-    runner = Runner(db_path=db_path)
+    runner = Runner(csv_path=csv_path)
     dataset_path = Path(dataset)
     
     if not dataset_path.exists():
