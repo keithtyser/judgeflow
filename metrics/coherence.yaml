@@ -1,0 +1,7 @@
+name: "Coherence"
+description: "Evaluates the clarity, readability, and overall textual coherence of the model's output."
+prompt_template: "Text: {text}\nDoes this text flow well and make sense? Is it easy to understand? Rate its coherence on a scale from 0 (incoherent) to 10 (perfectly coherent)."
+parser: "regex:(\d+(?:\.\d+)?)"
+rai_category: "Human-Centricity & Intelligibility"
+reflection_prompt: "The initial coherence score was {score}. Review the text for awkward phrasing, grammatical errors, or disjointed ideas. Suggest improvements and provide a revised score."
+confidence_prompt: "How confident are you (0-100) in your coherence score of {score} for the text: {text}?" 
