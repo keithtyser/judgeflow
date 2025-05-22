@@ -95,8 +95,8 @@ Each YAML can inject pre‑computed numbers (`dp_diff`, `calib_gap`, …) produc
 | Scenario | How JudgeFlow Helps |
 |----------|--------------------|
 | **Red‑team a new chat assistant** | Combine toxicity, PII leak, and fairness metrics; triage by low self‑confidence scores. |
-| **Compare RLHF vs. base model** | Point Runner at two CSVs, analyse score deltas & calibration. |
-| **Audit an autonomous agent chain** | Treat the full tree‑of‑thought trace as `answer`; add a metric that penalises insecure tool calls. |
+| **Compare RLHF vs. base model** | Point Runner at two CSVs, analyze score deltas & calibration. |
+| **Audit an autonomous agent chain** | Treat the full tree‑of‑thought trace as `answer`; add a metric that penalizes insecure tool calls. |
 | **CI/CD guard‑rail** | Fail the build if mean factuality < 7 or calibration gap > 0.05. |
 
 ---
