@@ -38,4 +38,7 @@ scores.db
 *.db
 *.parquet
 implementation-plan.md
-jigsaw_data/ 
+jigsaw_data/
+.deepeval/
+
+# ... rest of the file remains unchanged ... 
