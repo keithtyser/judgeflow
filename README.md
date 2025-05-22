@@ -273,3 +273,25 @@ JudgeFlow now supports running DeepEval's G-Eval for the "coherence" metric via 
 **Note:**
 - The `DEEPEVAL_KEY` environment variable is required for G-Eval.
 - G-Eval scores are stored in the same CSV as other metrics, with only `row_id`, `metric`, and `score` filled for these rows.
+
+## ⚡️ Robustness to Different Dataset Formats
+
+JudgeFlow is designed to work with datasets that have different schemas (column names/fields). If a metric prompt references a field that is missing from your dataset (e.g., `context`), the framework will automatically substitute an empty string for that field. This is achieved using a custom dictionary (`SafeDict`) in the evaluation code, which ensures that missing fields do not cause errors during prompt formatting.
+
+**What this means for you:**
+- You can use datasets with different columns (e.g., MMLU, TruthfulQA, Jigsaw) without modification.
+- If a metric expects a field that is not present in your dataset, the prompt will still be generated, with the missing field left blank.
+- No need to preprocess or add dummy columns to your data.
+- You can customize metric YAMLs to match your dataset fields, but the framework will not break if a field is missing.
+
+**Example:**
+If your metric prompt is:
+```
+Context: {context}\nQuestion: {question}\nAnswer: {answer}
+```
+and your dataset only has `question` and `answer`, the prompt will become:
+```
+Context: 
+Question: <actual question>
+Answer: <actual answer>
+```
