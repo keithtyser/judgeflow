@@ -6,14 +6,14 @@
 
 ## ✨ Why JudgeFlow?
 
-| JudgeFlow | ↔️ | Existing toolkits (e.g. DeepEval) |
-|-----------|---|------------------------------------|
-| **Metric‑as‑YAML** – no code changes, just add a file | ❌ | Metrics hard‑coded in Python |
-| **Multi‑dimensional RAI focus** – truthfulness, toxicity, fairness, privacy, calibration | ⚠️ | Limited to quality‑style metrics |
-| **Self‑reflection + agreement checks** – estimates *score reliability* out‑of‑the‑box | ⚠️ | Rarely included |
-| **Confidence calibration curve** – sanity‑check the LLM’s own certainty | ❌ | Not built‑in |
-| **Interoperable** – evaluate pretrained, RLHF‑tuned, or agent chain traces | ⚠️ | Usually single prompt/response |
-| **CLI first, CSV out** – drop into any MLOps stack | ⚠️ | Custom dashboards |
+| Feature | JudgeFlow | Existing toolkits* |
+|---------|-----------|--------------------|
+| **Metric as YAML** | **Yes – drop a file, no code** | Hard-coded in Python |
+| **Responsible-AI coverage** | Truthfulness, toxicity, fairness, privacy, calibration | Mostly quality metrics |
+| **Score reliability** | Self-reflection + agreement checks | Rarely included |
+| **Confidence calibration** | Built-in calibration curve | Not available |
+| **Interoperability** | Pre-trained, RLHF, agent traces | Single prompt/response |
+| **Outputs** | CLI + CSV (MLOps-friendly) | Custom dashboards |
 
 <sup>DeepEval remains an excellent coherence scorer – and JudgeFlow can call it when you pass `--deepeval`.</sup>
 
