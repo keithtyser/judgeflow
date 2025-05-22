@@ -24,12 +24,12 @@ class Runner:
         scores = []
         if len(df) > 3:
             # Parallelize row evaluation for speed
-            all_row_scores = await asyncio.gather(*[self.evaluate_row(row) for _, row in df.iterrows()])
+            all_row_scores = await asyncio.gather(*[self.evaluate_row(idx, row) for idx, row in df.iterrows()])
             for row_scores in all_row_scores:
                 scores.extend(row_scores)
         else:
-            for _, row in df.iterrows():
-                row_scores = await self.evaluate_row(row)
+            for idx, row in df.iterrows():
+                row_scores = await self.evaluate_row(idx, row)
                 scores.extend(row_scores)
         
         # Write all scores to CSV
@@ -37,16 +37,20 @@ class Runner:
         
         return scores
     
-    async def evaluate_row(self, row: Dict[Any, Any]) -> List[Dict]:
+    async def evaluate_row(self, idx: int, row: Dict[Any, Any]) -> List[Dict]:
         """Evaluate a single row using all metrics in parallel."""
-        tasks = [self._apply_metric(row, m) for m in self.metrics]
+        tasks = [self._apply_metric(idx, row, m) for m in self.metrics]
         row_scores = await asyncio.gather(*tasks)
         return row_scores
     
-    async def _apply_metric(self, row: Dict[Any, Any], metric: MetricSpec) -> Dict:
+    async def _apply_metric(self, idx: int, row: Dict[Any, Any], metric: MetricSpec) -> Dict:
         """Apply a single metric to a row."""
-        # Format the prompt template with row data
-        prompt = metric.prompt_template.format(**row)
+        # Use a dict subclass that returns '' for missing keys
+        class SafeDict(dict):
+            def __missing__(self, key):
+                return ""
+        # Format the prompt template with row data, using SafeDict
+        prompt = metric.prompt_template.format_map(SafeDict(row))
         
         # Get response from LLM
         response = await chat(prompt)
@@ -63,7 +67,7 @@ class Runner:
         # Prepare the reflection prompt (inject score and row fields)
         reflection_context = dict(row)
         reflection_context['score'] = score_value
-        reflection_prompt = metric.reflection_prompt.format(**reflection_context)
+        reflection_prompt = metric.reflection_prompt.format_map(SafeDict(reflection_context))
         # Enforce 256-token limit (approx 1024 chars, conservative)
         max_chars = 1024
         if len(reflection_prompt) > max_chars:
@@ -101,7 +105,7 @@ class Runner:
         # 1. Self-reported confidence
         confidence_context = dict(row)
         confidence_context['score'] = score_value
-        confidence_prompt = metric.confidence_prompt.format(**confidence_context)
+        confidence_prompt = metric.confidence_prompt.format_map(SafeDict(confidence_context))
         self_conf = None
         try:
             conf_response = await chat(confidence_prompt)
@@ -131,8 +135,12 @@ class Runner:
         # Add timestamp
         timestamp = datetime.utcnow()
 
+        row_id = row.get("id")
+        if row_id is None:
+            row_id = str(idx)
+
         return {
-            "row_id": str(row.get("id", "unknown")),
+            "row_id": row_id,
             "metric": metric.name,
             "score": score_value,
             "revised_score": revised_score,
